@@ -25,6 +25,11 @@ set(SIGN_SCHEME_SOURCES
 
     src/helper/int2uc.c
     src/helper/uc2int.c
+
+    src/eddsa/key_gen.c
+    src/eddsa/read_key.c
+    src/eddsa/sign.c
+    src/eddsa/verify.c
     
     src/ecdsa/key_gen.c
     src/ecdsa/read_key.c
@@ -52,6 +57,7 @@ target_include_directories(SignScheme
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/eddsa
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ecdsa
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rsa
         ${CMAKE_CURRENT_SOURCE_DIR}/src/no_sign
@@ -84,6 +90,7 @@ install(DIRECTORY include/
 
 # Module headers - create the subdirectories and install the headers
 install(FILES src/rsa/rsa.h DESTINATION include/rsa)
+install(FILES src/eddsa/eddsa.h DESTINATION include/eddsa)
 install(FILES src/ecdsa/ecdsa.h DESTINATION include/ecdsa)
 install(FILES src/no_sign/no_sign.h DESTINATION include/no_sign)
 install(FILES src/helper/helper.h DESTINATION include/helper)

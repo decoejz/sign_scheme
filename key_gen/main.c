@@ -10,6 +10,7 @@ void print_usage()
     printf("Available crypto types:\n");
     printf("  - rsa\n");
     printf("  - ecdsa\n");
+    printf("  - eddsa\n");
 }
 
 int main(int argc, char *argv[])
@@ -21,13 +22,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Define the arrya of schemes to search if valid.
+    char *schemes[] = {"RSA", "EDDSA", "ECDSA"};
+    int schemes_size = sizeof(schemes) / sizeof(schemes[0]);
+    int valid = 0;
+
     // Convert input to lowercase for case-insensitive comparison
     char *input = argv[1];
     for (int i = 0; input[i]; i++)
     {
-        if (input[i] >= 'A' && input[i] <= 'Z')
+        if (input[i] >= 'a' && input[i] <= 'z')
         {
-            input[i] += 32; // Convert to lowercase
+            input[i] -= 32; // Convert to lowercase
         }
     }
 
@@ -36,16 +42,20 @@ int main(int argc, char *argv[])
     sprintf(sk_name, "secret_key_%s", key_name);
     sprintf(pk_name, "public_key_%s", key_name);
 
+    setenv("SIGN_SCHEME", input, 0);
+
+    for (int i = 0; i < schemes_size; i++)
+    {
+        if (strcmp(schemes[i], input) == 0)
+        {
+            key_gen(sk_name, pk_name);
+            valid = 1;
+            break;
+        }
+    }
+
     // Process based on input
-    if (strcmp(input, "rsa") == 0)
-    {
-        key_gen(RSA, sk_name, pk_name);
-    }
-    else if (strcmp(input, "ecdsa") == 0)
-    {
-        key_gen(ECDSA, sk_name, pk_name);
-    }
-    else
+    if (!valid)
     {
         print_usage();
         return 1;

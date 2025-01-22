@@ -4,8 +4,8 @@ CFLAGS = -g -std=c11 -Wall
 
 # Directories and includes
 INSTALL_DIR = ../install
-CFLAGS += -I$(INSTALL_DIR)/include
-LDFLAGS = -L$(INSTALL_DIR)/lib
+CFLAGS += -I$(INSTALL_DIR)/include -I/opt/homebrew/opt/openssl@3/include ## TODO colocar apenas se for macos
+LDFLAGS = -L$(INSTALL_DIR)/lib -L/opt/homebrew/opt/openssl@3/lib ## TODO colocar apenas se for macos
 
 # Libraries - order matters!
 LIBS = -lSignScheme -lssl -lcrypto
