@@ -43,7 +43,7 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
     step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
                      (2 if not applicable)
-    alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa)
+    alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa) | 3 (eddsa)
     time:            Moment in second of the operation                                  > timestemp (s)
     mavlink_len:     Mavlink payload length                                             > char
     mavlink_seq:     Mavlink message sequence                                           > char
@@ -127,7 +127,14 @@ static void init_schemes()
             verify_p = verify_ecdsa;
             key_gen_p = key_gen_ecdsa;
         }
-
+        else if (strcmp(sign_scheme, "EDDSA") == 0)
+        {
+            scheme_number = EDDSA;
+            read_key_p = read_key_eddsa;
+            sign_p = sign_eddsa;
+            verify_p = verify_eddsa;
+            key_gen_p = key_gen_eddsa;
+        }
     }
 }
 
@@ -268,7 +275,8 @@ int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_ke
     return res;
 }
 
-int key_gen(int type, const char *secret_name, const char *public_name)
+int key_gen(const char *secret_name, const char *public_name)
 {
+    init_schemes();
     return key_gen_p(secret_name, public_name);
 }

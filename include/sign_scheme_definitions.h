@@ -16,6 +16,7 @@ extern "C"
 #define NO_SIGN 0
 #define RSA 1
 #define ECDSA 2
+#define EDDSA 3
 
 #define QGC 0
 #define PX4 1

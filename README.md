@@ -8,6 +8,7 @@
   - [Requirements](#requirements)
   - [Lib Architecture](#lib-architecture)
   - [Getting Started](#getting-started)
+    - [Protocol Structure](#protocol-structure)
     - [Configuring the Lib](#configuring-the-lib)
     - [Code Definitions](#code-definitions)
     - [Adding New Sign Schemes](#adding-new-sign-schemes)
@@ -26,6 +27,8 @@ These two applications communicate through [MAVlink Protocol](https://mavlink.io
 As the project involves changing the communication we also had to modify those projects. The modified code (forked version) can be found in:
 - [Forked PX4](https://github.com/decoejz/PX4-Autopilot)
 - [Forked QGC](https://github.com/decoejz/qgroundcontrol)
+
+This project is build as a scientific study of a Master Degree in Aeronautical and Computer Engineer from [ITA - Instituto Tecnológico de Aeronáutica](http://www.ita.br/).
 
 ## Requirements
 
@@ -103,6 +106,18 @@ link_directories(${LIB_DIR})
 
 target_link_libraries(test_bin PRIVATE SignScheme::SignScheme)
 ```
+
+### Protocol Structure
+
+As this lib focus on testing some cryptographic sign schemes and each of them can have different sign sizes, and the MAVlink message also have different sizes. Tt is important for the lib to know were the message ends and the sign begins. For this to be easly of use on both sides of the communication, a header is added to the begging of the message transmited.
+
+In this way, the message transmited sctructure is:
+
+`HEADER + MESSAGE RAW + SIGNATURE`
+
+- HEADER: Will be fixed for each sign scheme (it does not need to be the same between different schemes). In all schemes implement so far they are an int size, which means 4 bytes of information. It will always tells the size of the signature.
+- MESSAGE RAW: The [MAVlink message](https://mavlink.io/en/messages/common.html) that is being signed.
+- SIGNATURE: The signature itself.
 
 ### Configuring the Lib
 
