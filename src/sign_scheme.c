@@ -41,7 +41,7 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
                      (2 if not applicable)
     alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa) | 3 (eddsa)
     time:            Moment in second of the operation                                  > timestemp (s)
-    len:             Message length                                                    > char
+    len:             Message length                                                     > char
 
     For the purpose of optimizing memory consumption during the execution of the program, some parameters will be encoded to
     a smaller size and writen all toghether in a char. Those parameters are:

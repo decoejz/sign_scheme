@@ -252,7 +252,7 @@ The sign_scheme.c has some parte of the code that is related to logging informat
 Every time this lib is used a new log file will be created as a csv file. These file is organized as described below:
 
     CSV Header:
-        id,app,operation,step,valid,alg,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,app,operation,step,valid,alg,time,len
 
     Each line below will be a parameter of the CSV file:
 
@@ -264,11 +264,7 @@ Every time this lib is used a new log file will be created as a csv file. These 
                      (2 if not applicable)
     alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa)
     time:            Moment in second of the operation                                  > timestemp (s)
-    mavlink_len:     Mavlink payload length                                             > char
-    mavlink_seq:     Mavlink message sequence                                           > char
-    mavlink_sysid:   Mavlink system id                                                  > char
-    mavlink_compid:  Mavlink component id                                               > char
-    mavlink_msgid:   Mavling message ID                                                 > int
+    len:             Message length                                                     > char
 
     For the purpose of optimizing memory consumption during the execution of the program, some parameters will be encoded to
     a smaller size and writen all toghether in a char. Those parameters are:
@@ -279,11 +275,11 @@ Every time this lib is used a new log file will be created as a csv file. These 
         - alg: 3 bits
 
     Final CSV strutucture:
-        id,encoded,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,encoded,time,len
 
     Output Examples:
-        67,17,33,9,4,42,158,0
-        67,49,40,9,4,42,158,0
+        67,17,33,9
+        67,49,40,9
 
 ## Author
 
