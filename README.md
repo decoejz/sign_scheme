@@ -136,7 +136,7 @@ export SIGN_SCHEME=RSA
 export SECRET_KEY_PATH=/path/to/private_key.pem
 export PUBLIC_KEY_PATH=/path/to/public_key.pem
 export LOG_FILE_PATH=/path/to/log/dir
-export APP_NAME=PX4
+export APP_NAME=Autopilot
 ```
 
 Make sure to set these variables according to your environment and the cryptographic algorithm you intend to use. The library will automatically read these variables and configure itself accordingly.
