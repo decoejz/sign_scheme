@@ -34,7 +34,7 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
     Each line below will be a parameter of the CSV file:
 
     id:              Unique identification of the operation                             > int
-    app:             Which app is logging                                               > 0 (qgc) | 1 (px4)
+    app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
     step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
@@ -142,13 +142,13 @@ static void init_app()
     char *app_name = getenv("APP_NAME");
     if (app_name != NULL)
     {
-        if (strcmp(app_name, "QGC") == 0)
+        if (strcmp(app_name, "GroundControl") == 0)
         {
-            app = QGC;
+            app = GroundControl;
         }
-        else if (strcmp(app_name, "PX4") == 0)
+        else if (strcmp(app_name, "Autopilot") == 0)
         {
-            app = PX4;
+            app = Autopilot;
         }
         else
         {

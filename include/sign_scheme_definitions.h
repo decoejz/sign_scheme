@@ -18,8 +18,8 @@ extern "C"
 #define ECDSA 2
 #define EDDSA 3
 
-#define QGC 0
-#define PX4 1
+#define GroundControl 0
+#define Autopilot 1
 
 #define SIGN 0
 #define VERIFY 1
