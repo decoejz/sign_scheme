@@ -127,7 +127,7 @@ To configure the project environmental variables is used. You need to set specif
 - `SECRET_KEY_PATH`: Specifies the path to the file where the private key is stored.
 - `PUBLIC_KEY_PATH`: Specifies the path to the file where the public key is stored.
 - `LOG_FILE_PATH`: Specified the path where the log file will be writen.
-- `APP_NAME`: Which app is the lib using. It is automatically configured inside the [PX4](https://github.com/decoejz/PX4-Autopilot) and [QGC](https://github.com/decoejz/qgroundcontrol) project but if desired can be forced in the terminal. It can only be one of two values (`PX4` or `QGC`).
+- `APP_NAME`: Which app is the lib using. It is automatically configured inside the [PX4](https://github.com/decoejz/PX4-Autopilot) and [QGC](https://github.com/decoejz/qgroundcontrol) project but if desired can be forced in the terminal. It can only be one of two values (`Autopilot` or `GroundControl`).
 
 Example of setting these variables in a Unix-based system:
 
@@ -257,7 +257,7 @@ Every time this lib is used a new log file will be created as a csv file. These 
     Each line below will be a parameter of the CSV file:
 
     id:              Unique identification of the operation                             > int
-    app:             Which app is logging                                               > 0 (qgc) | 1 (px4)
+    app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
     step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
