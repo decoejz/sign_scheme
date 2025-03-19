@@ -9,9 +9,10 @@
 typedef unsigned char uchar;
 
 static char *sign_scheme;
-
-static const char *private_key_name;
-static const char *public_key_name;
+static char *app_name;
+static char *log_path;
+static char *private_key_name;
+static char *public_key_name;
 
 static FILE *data_log;
 static char file_name[200];
@@ -59,6 +60,39 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
         67,49,40,9
 */
 
+#define CONFIG_FILE_PATH "sign_scheme.cfg"
+#define MAX_LINE_LENGTH 256
+
+void load_config() {
+    FILE *file = fopen(CONFIG_FILE_PATH, "r");
+    if (!file) {
+        fprintf(stderr, "Error: Cannot open config file: %s\n", CONFIG_FILE_PATH);
+        exit(EXIT_FAILURE);
+    }
+
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, sizeof(line), file)) {
+        char *key = strtok(line, "=");
+        char *value = strtok(NULL, "\n");
+
+        if (key && value) {
+            if (strcmp(key, "APP_NAME") == 0) {
+                strncpy(app_name, value, sizeof(app_name) - 1);
+            } else if (strcmp(key, "SIGN_SCHEME") == 0) {
+                strncpy(sign_scheme, value, sizeof(sign_scheme) - 1);
+            } else if (strcmp(key, "SECRET_KEY_PATH") == 0) {
+                strncpy(private_key_name, value, sizeof(private_key_name) - 1);
+            } else if (strcmp(key, "PUBLIC_KEY_PATH") == 0) {
+                strncpy(public_key_name, value, sizeof(public_key_name) - 1);
+            } else if (strcmp(key, "LOG_FILE_PATH") == 0) {
+                strncpy(log_path, value, sizeof(log_path) - 1);
+            }
+        }
+    }
+
+    fclose(file);
+}
+
 static void close_all(void)
 {
     fclose(data_log);
@@ -95,7 +129,7 @@ static uchar encode(uchar op, uchar step, uchar valid)
 
 static void init_schemes()
 {
-    sign_scheme = getenv("SIGN_SCHEME");
+    //sign_scheme = getenv("SIGN_SCHEME");
     if (sign_scheme != NULL)
     {
         if (strcmp(sign_scheme, "RSA") == 0)
@@ -127,8 +161,8 @@ static void init_schemes()
 
 static void init_keys()
 {
-    private_key_name = getenv("SECRET_KEY_PATH");
-    public_key_name = getenv("PUBLIC_KEY_PATH");
+    //private_key_name = getenv("SECRET_KEY_PATH");
+    //public_key_name = getenv("PUBLIC_KEY_PATH");
 
     if (!private_key_name || !public_key_name)
     {
@@ -139,7 +173,7 @@ static void init_keys()
 
 static void init_app()
 {
-    char *app_name = getenv("APP_NAME");
+    //char *app_name = getenv("APP_NAME");
     if (app_name != NULL)
     {
         if (strcmp(app_name, "GroundControl") == 0)
@@ -165,7 +199,7 @@ static void init_app()
 
 static void init_logs()
 {
-    const char *log_path = getenv("LOG_FILE_PATH");
+    //const char *log_path = getenv("LOG_FILE_PATH");
     if (!log_path)
     {
         printf("No path defined for log file.\n");
@@ -195,6 +229,7 @@ static void init_all()
 {
     if (!initialized)
     {
+        load_config();
         init_app();
         init_schemes();
         init_keys();
