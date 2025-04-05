@@ -127,7 +127,7 @@ To configure the project environmental variables is used. You need to set specif
 - `SECRET_KEY_PATH`: Specifies the path to the file where the private key is stored.
 - `PUBLIC_KEY_PATH`: Specifies the path to the file where the public key is stored.
 - `LOG_FILE_PATH`: Specified the path where the log file will be writen.
-- `APP_NAME`: Which app is the lib using. It is automatically configured inside the [PX4](https://github.com/decoejz/PX4-Autopilot) and [QGC](https://github.com/decoejz/qgroundcontrol) project but if desired can be forced in the terminal. It can only be one of two values (`PX4` or `QGC`).
+- `APP_NAME`: Which app is the lib using. It is automatically configured inside the [PX4](https://github.com/decoejz/PX4-Autopilot) and [QGC](https://github.com/decoejz/qgroundcontrol) project but if desired can be forced in the terminal. It can only be one of two values (`Autopilot` or `GroundControl`).
 
 Example of setting these variables in a Unix-based system:
 
@@ -136,7 +136,7 @@ export SIGN_SCHEME=RSA
 export SECRET_KEY_PATH=/path/to/private_key.pem
 export PUBLIC_KEY_PATH=/path/to/public_key.pem
 export LOG_FILE_PATH=/path/to/log/dir
-export APP_NAME=PX4
+export APP_NAME=Autopilot
 ```
 
 Make sure to set these variables according to your environment and the cryptographic algorithm you intend to use. The library will automatically read these variables and configure itself accordingly.
@@ -252,23 +252,19 @@ The sign_scheme.c has some parte of the code that is related to logging informat
 Every time this lib is used a new log file will be created as a csv file. These file is organized as described below:
 
     CSV Header:
-        id,app,operation,step,valid,alg,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,app,operation,step,valid,alg,time,len
 
     Each line below will be a parameter of the CSV file:
 
     id:              Unique identification of the operation                             > int
-    app:             Which app is logging                                               > 0 (qgc) | 1 (px4)
+    app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
     step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
                      (2 if not applicable)
     alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa)
     time:            Moment in second of the operation                                  > timestemp (s)
-    mavlink_len:     Mavlink payload length                                             > char
-    mavlink_seq:     Mavlink message sequence                                           > char
-    mavlink_sysid:   Mavlink system id                                                  > char
-    mavlink_compid:  Mavlink component id                                               > char
-    mavlink_msgid:   Mavling message ID                                                 > int
+    len:             Message length                                                     > char
 
     For the purpose of optimizing memory consumption during the execution of the program, some parameters will be encoded to
     a smaller size and writen all toghether in a char. Those parameters are:
@@ -279,11 +275,11 @@ Every time this lib is used a new log file will be created as a csv file. These 
         - alg: 3 bits
 
     Final CSV strutucture:
-        id,encoded,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,encoded,time,len
 
     Output Examples:
-        67,17,33,9,4,42,158,0
-        67,49,40,9,4,42,158,0
+        67,17,33,9
+        67,49,40,9
 
 ## Author
 
