@@ -28,28 +28,20 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
 
 /* The CSV structure will be:
 
-    Important links:
-        - Mavlink overview: https://mavlink.io/en/about/overview.html
-        - Mavlink messages: https://mavlink.io/en/messages/common.html
-
     CSV Header:
-        id,app,operation,step,valid,alg,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,app,operation,step,valid,alg,time,len
 
     Each line below will be a parameter of the CSV file:
 
     id:              Unique identification of the operation                             > int
-    app:             Which app is logging                                               > 0 (qgc) | 1 (px4)
+    app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
     step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
                      (2 if not applicable)
     alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa) | 3 (eddsa)
     time:            Moment in second of the operation                                  > timestemp (s)
-    mavlink_len:     Mavlink payload length                                             > char
-    mavlink_seq:     Mavlink message sequence                                           > char
-    mavlink_sysid:   Mavlink system id                                                  > char
-    mavlink_compid:  Mavlink component id                                               > char
-    mavlink_msgid:   Mavling message ID                                                 > int
+    len:             Message length                                                     > char
 
     For the purpose of optimizing memory consumption during the execution of the program, some parameters will be encoded to
     a smaller size and writen all toghether in a char. Those parameters are:
@@ -60,17 +52,12 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
         - alg: 3 bits
 
     Final CSV strutucture:
-        id,encoded,time,mavlink_len,mavlink_seq,mavlink_sysid,mavlink_compid,mavlink_msgid
+        id,encoded,time,len
 
     Output Examples:
-        67,17,33,9,4,42,158,0
-        67,49,40,9,4,42,158,0
+        67,17,33,9
+        67,49,40,9
 */
-
-static int msg2int(int msg0, int msg1, int msg2)
-{
-    return (msg2 << 16) | (msg1 << 8) | msg0;
-}
 
 static void close_all(void)
 {
@@ -83,9 +70,9 @@ static void cleanup_handler(int signum)
     _exit(1);
 }
 
-static void write_log(int id, uchar encoded, time_t time, uchar len, uchar seq, uchar sysid, uchar compid, int msgid)
+static void write_log(int id, uchar encoded, time_t time, uchar len)
 {
-    fprintf(data_log, "%d,%d,%ld,%d,%d,%d,%d,%d\n", id, encoded, time, len, seq, sysid, compid, msgid);
+    fprintf(data_log, "%d,%d,%ld,%d\n", id, encoded, time, len);
 }
 
 static uchar encode(uchar op, uchar step, uchar valid)
@@ -155,13 +142,13 @@ static void init_app()
     char *app_name = getenv("APP_NAME");
     if (app_name != NULL)
     {
-        if (strcmp(app_name, "QGC") == 0)
+        if (strcmp(app_name, "GroundControl") == 0)
         {
-            app = QGC;
+            app = GroundControl;
         }
-        else if (strcmp(app_name, "PX4") == 0)
+        else if (strcmp(app_name, "Autopilot") == 0)
         {
-            app = PX4;
+            app = Autopilot;
         }
         else
         {
@@ -228,12 +215,6 @@ int sign(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secr
     int res;
     init_all();
 
-    uchar m_len = msg_raw[1];
-    uchar m_seq = msg_raw[4];
-    uchar m_sysid = msg_raw[5];
-    uchar m_compid = msg_raw[6];
-    int msgid = msg2int(msg_raw[7], msg_raw[8], msg_raw[9]);
-
     int id = rand();
     time_t before_exec = time(NULL);
 
@@ -241,8 +222,8 @@ int sign(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secr
 
     time_t after_exec = time(NULL);
 
-    write_log(id, encode(SIGN, BEFORE, NA), before_exec, m_len, m_seq, m_sysid, m_compid, msgid);
-    write_log(id, encode(SIGN, AFTER, NA), after_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    write_log(id, encode(SIGN, BEFORE, NA), before_exec, msg_len);
+    write_log(id, encode(SIGN, AFTER, NA), after_exec, msg_len);
     fflush(data_log);
 
     return res;
@@ -261,14 +242,8 @@ int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_ke
 
     time_t after_exec = time(NULL);
 
-    uchar m_len = msg_raw[1];
-    uchar m_seq = msg_raw[4];
-    uchar m_sysid = msg_raw[5];
-    uchar m_compid = msg_raw[6];
-    int msgid = msg2int(msg_raw[7], msg_raw[8], msg_raw[9]);
-
-    write_log(id, encode(VERIFY, BEFORE, NA), before_exec, m_len, m_seq, m_sysid, m_compid, msgid);
-    write_log(id, encode(VERIFY, AFTER, res > 0), after_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    write_log(id, encode(VERIFY, BEFORE, NA), before_exec, res);
+    write_log(id, encode(VERIFY, AFTER, res > 0), after_exec, res);
 
     fflush(data_log);
 
