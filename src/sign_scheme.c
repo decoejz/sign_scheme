@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "sign_scheme.h"
 
@@ -29,14 +30,12 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
 /* The CSV structure will be:
 
     CSV Header:
-        id,app,operation,step,valid,alg,time,len
+        app,operation,valid,alg,time,len
 
     Each line below will be a parameter of the CSV file:
 
-    id:              Unique identification of the operation                             > int
     app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
-    step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
                      (2 if not applicable)
     alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa) | 3 (eddsa)
@@ -47,16 +46,15 @@ static int (*key_gen_p)(const char *, const char *) = key_gen_no_sign;
     a smaller size and writen all toghether in a char. Those parameters are:
         - app: 1 bit
         - operation: 1 bit
-        - step: 1 bit
         - valid: 2 bits
-        - alg: 3 bits
+        - alg: 4 bits
 
     Final CSV strutucture:
-        id,encoded,time,len
+        encoded,time,len
 
     Output Examples:
-        67,17,33,9
-        67,49,40,9
+        17,33,9
+        49,40,9
 */
 
 static void close_all(void)
@@ -70,16 +68,16 @@ static void cleanup_handler(int signum)
     _exit(1);
 }
 
-static void write_log(int id, uchar encoded, time_t time, uchar len)
+static void write_log(uchar encoded, long int time, uchar len)
 {
-    fprintf(data_log, "%d,%d,%ld,%d\n", id, encoded, time, len);
+    fprintf(data_log, "%d,%lu,%d\n", encoded, time, len);
 }
 
-static uchar encode(uchar op, uchar step, uchar valid)
+static uchar encode(uchar op, uchar valid)
 {
     /*
-    app | operation | step | valid | alg
-     0  |    0      |  0   |   00  | 000
+    app | operation | valid | alg
+     0  |    0      |   00  | 0000
     */
 
     // Initialize with the algorithm number since it is the less significant bits
@@ -87,8 +85,7 @@ static uchar encode(uchar op, uchar step, uchar valid)
 
     res |= (app) << 7;
     res |= (op) << 6;
-    res |= (step) << 5;
-    res |= (valid) << 3;
+    res |= (valid) << 4;
 
     return res;
 }
@@ -177,7 +174,6 @@ static void init_logs()
     sa.sa_handler = cleanup_handler;
 
     time_t now = time(NULL);
-    srand(now); // Add seed from now so it never repeats the ID between executions
     sprintf(file_name, "%s/data_log_%ld.csv", log_path, now);
     data_log = fopen(file_name, "a+");
 
@@ -215,15 +211,14 @@ int sign(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secr
     int res;
     init_all();
 
-    int id = rand();
-    time_t before_exec = time(NULL);
+    struct timeval stop, start;
+    gettimeofday(&start, NULL);
 
     res = sign_p(msg_signed, msg_raw, msg_len, secret_key);
 
-    time_t after_exec = time(NULL);
+    gettimeofday(&stop, NULL);
 
-    write_log(id, encode(SIGN, BEFORE, NA), before_exec, msg_len);
-    write_log(id, encode(SIGN, AFTER, NA), after_exec, msg_len);
+    write_log(encode(SIGN, NA), (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec, msg_len);
     fflush(data_log);
 
     return res;
@@ -235,15 +230,14 @@ int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_ke
 
     init_all();
 
-    int id = rand();
-    time_t before_exec = time(NULL);
+    struct timeval stop, start;
+    gettimeofday(&start, NULL);
 
     res = verify_p(msg_raw, msg_signed, total_len, public_key);
 
-    time_t after_exec = time(NULL);
+    gettimeofday(&stop, NULL);
 
-    write_log(id, encode(VERIFY, BEFORE, NA), before_exec, res);
-    write_log(id, encode(VERIFY, AFTER, res > 0), after_exec, res);
+    write_log(encode(VERIFY, res > 0), (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec, res);
 
     fflush(data_log);
 

@@ -24,9 +24,6 @@ extern "C"
 #define SIGN 0
 #define VERIFY 1
 
-#define BEFORE 0
-#define AFTER 1
-
 #define INVALID 0
 #define VALID 1
 #define NA 2
