@@ -238,7 +238,6 @@ int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_ke
     gettimeofday(&stop, NULL);
 
     write_log(encode(VERIFY, res > 0), (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec, res);
-
     fflush(data_log);
 
     return res;
