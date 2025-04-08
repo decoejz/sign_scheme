@@ -22,7 +22,7 @@
 
 This lib was build to validate and test a series of cryptographic sign schemes for message transmission between a ground station and a drone. For this we used the [PX4 Autopilot](https://px4.io/) and the [QGroundControl (QGC)](https://qgroundcontrol.com/) for testing the communication.
 
-These two applications communicate through [MAVlink Protocol](https://mavlink.io/) which was the implementation focus.
+These two applications communicate through [MAVlink Protocol](https://mavlink.io/).
 
 As the project involves changing the communication we also had to modify those projects. The modified code (forked version) can be found in:
 - [Forked PX4](https://github.com/decoejz/PX4-Autopilot)
@@ -89,7 +89,7 @@ The `key_gen` directory is just a simple project to generate the required key fo
 
 ## Getting Started
 
-After installing all the [requirement packages](#requirements) you can start building the project. For that you can simple run the `compile.sh` shell script which will create the folder `build` and run the `cmake` command inside it. It will also create the `install` folder where the archive file (.a) can be found in the `install/lib`. This folder will also have a `include` folder with all headers inside it.
+After installing all the [required packages](#requirements) you can start building the project. For that you can simple run the `compile.sh` shell script which will create the folder `build` and run the `cmake` command inside it. It will also create the `install` folder where the archive file (.a) can be found in the `install/lib`. This folder will also have a `include` folder with all headers inside it.
 
 After compiling the lib it will be ready to be used and can normally be imported in other projects.
 
@@ -116,14 +116,14 @@ In this way, the message transmited sctructure is:
 `HEADER + MESSAGE RAW + SIGNATURE`
 
 - HEADER: Will be fixed for each sign scheme (it does not need to be the same between different schemes). In all schemes implement so far they are an int size, which means 4 bytes of information. It will always tells the size of the signature.
-- MESSAGE RAW: The [MAVlink message](https://mavlink.io/en/messages/common.html) that is being signed.
+- MESSAGE RAW: The [MAVlink message](https://mavlink.io/en/messages/common.html) (or any other protocol) that is being signed.
 - SIGNATURE: The signature itself.
 
 ### Configuring the Lib
 
 To configure the project environmental variables is used. You need to set specific variables that the library will read during initialization. These variables can be set in your shell profile or directly in the terminal before running your application. The main environmental variables used are:
 
-- `SIGN_SCHEME`: Defines the cryptographic algorithm to be used (e.g., `RSA`, `ECDSA`).
+- `SIGN_SCHEME`: Defines the cryptographic algorithm to be used (e.g., `RSA`, `ECDSA`, `EDDSA`).
 - `SECRET_KEY_PATH`: Specifies the path to the file where the private key is stored.
 - `PUBLIC_KEY_PATH`: Specifies the path to the file where the public key is stored.
 - `LOG_FILE_PATH`: Specified the path where the log file will be writen.
@@ -252,17 +252,15 @@ The sign_scheme.c has some parte of the code that is related to logging informat
 Every time this lib is used a new log file will be created as a csv file. These file is organized as described below:
 
     CSV Header:
-        id,app,operation,step,valid,alg,time,len
+        app,operation,valid,alg,time,len
 
     Each line below will be a parameter of the CSV file:
 
-    id:              Unique identification of the operation                             > int
     app:             Which app is logging                                               > 0 (GroundControl) | 1 (Autopilot)
     operation:       Which operation is being mesured                                   > 0 (sign) | 1 (verify)
-    step:            When is this data from (before or after operation)                 > 0 (before) | 1 (after)
     valid:           Indicates if the validation was sucessfull                         > 0 (invalid) | 1 (valid) | 2 (Not Applicable)
                      (2 if not applicable)
-    alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa)
+    alg:             Cryptographic algorithm being used                                 > 0 (no_sign) | 1 (rsa) | 2 (ecdsa) | 3 (eddsa)
     time:            Moment in second of the operation                                  > timestemp (s)
     len:             Message length                                                     > char
 
@@ -270,16 +268,15 @@ Every time this lib is used a new log file will be created as a csv file. These 
     a smaller size and writen all toghether in a char. Those parameters are:
         - app: 1 bit
         - operation: 1 bit
-        - step: 1 bit
         - valid: 2 bits
-        - alg: 3 bits
+        - alg: 4 bits
 
     Final CSV strutucture:
-        id,encoded,time,len
+        encoded,time,len
 
     Output Examples:
-        67,17,33,9
-        67,49,40,9
+        17,33,9
+        49,40,9
 
 ## Author
 
