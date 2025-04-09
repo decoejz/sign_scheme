@@ -1,10 +1,13 @@
 // https://stackoverflow.com/questions/68102808/how-to-use-openssl-3-0-rsa-in-c
-#include <openssl/evp.h>
-#include <openssl/rsa.h>
-#include <stdio.h>
 
 #include "rsa.h"
 
+#ifdef CONFIG_EMBEDDED
+int key_gen_rsa(const char *secret_name, const char *public_name)
+{
+    return 1;
+}
+#else
 int key_gen_rsa(const char *secret_name, const char *public_name)
 {
     int size = 2048;
@@ -47,3 +50,4 @@ int key_gen_rsa(const char *secret_name, const char *public_name)
 
     return 1;
 }
+#endif

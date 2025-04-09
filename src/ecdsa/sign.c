@@ -14,7 +14,9 @@ int sign_ecdsa(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_
     size_t siglen = ECDSA_SIGN_MAX_LEN;
     if (!EVP_PKEY_sign(ctx, sigma, &siglen, msg_raw, (size_t)msg_len))
     {
+        #ifndef CONFIG_EMBEDDED
         printf("sign error: %s\n", strerror(errno));
+        #endif
         return 0;
     }
     EVP_PKEY_CTX_free(ctx);

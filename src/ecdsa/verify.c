@@ -8,7 +8,7 @@ int verify_ecdsa(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t pub
 {
     if (public_key.openssl_key == NULL)
     {
-        fprintf(stderr, "Validation ERROR - key is NULL\n");
+        log_error("Validation ERROR - key is NULL\n");
         return -1;
     }
 
@@ -23,13 +23,13 @@ int verify_ecdsa(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t pub
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(public_key.openssl_key, NULL);
     if (!ctx)
     {
-        fprintf(stderr, "Validation ERROR - Failed to create EVP_PKEY_CTX\n");
+        log_error("Validation ERROR - Failed to create EVP_PKEY_CTX\n");
         return -1;
     }
 
     if (EVP_PKEY_verify_init(ctx) <= 0)
     {
-        fprintf(stderr, "Validation ERROR - Failed to initialize EVP_PKEY_CTX\n");
+        log_error("Validation ERROR - Failed to initialize EVP_PKEY_CTX\n");
         EVP_PKEY_CTX_free(ctx);
         return -1;
     }
@@ -42,7 +42,9 @@ int verify_ecdsa(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t pub
     }
     else
     {
-        fprintf(stderr, "Validation ERROR - code %d\n", res);
+        char buffer[124];
+        sprintf(buffer, "Validation ERROR - code %d\n", res);
+        log_error(buffer);
         return res;
     }
 }

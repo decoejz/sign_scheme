@@ -6,23 +6,28 @@ extern "C"
 {
 #endif
 
+#include "utilsign.h"
+
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
-#include <openssl/err.h>
+#ifndef CONFIG_EMBEDDED
 #include <stdio.h>
+#endif
+#include <string.h>
 
-#include "sign_scheme_definitions.h"
-#include "../helper/helper.h"
+#include <stdlib.h>
+#include <errno.h>
 
-#define RSA_SIGN_HEADER_SIZE 4
-#define RSA_SIGN_MAX_LEN 2048
+#include "helper/helper.h"
+#include "helper/io.h"
 
-    int key_gen_rsa(const char *secret_name, const char *public_name);
-    pki_t read_key_rsa(char load_type, const char *file_name);
 
-    int verify_rsa(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_key);
-    int sign_rsa(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secret_key);
+int key_gen_rsa(const char *secret_name, const char *public_name);
+pki_t read_key_rsa(char load_type, const char *file_name);
+
+int verify_rsa(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_key);
+int sign_rsa(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secret_key);
 
 #ifdef __cplusplus
 }

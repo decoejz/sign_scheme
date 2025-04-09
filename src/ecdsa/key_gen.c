@@ -1,10 +1,13 @@
 // https://docs.openssl.org/3.0/man7/EVP_PKEY-EC/
-#include <openssl/evp.h>
-#include <openssl/ec.h>
-#include <stdio.h>
 
 #include "ecdsa.h"
 
+#ifdef CONFIG_EMBEDDED
+int key_gen_ecdsa(const char *secret_name, const char *public_name)
+{
+    return 1;
+}
+#else
 int key_gen_ecdsa(const char *secret_name, const char *public_name)
 {
     FILE *pk_file, *sk_file;
@@ -45,3 +48,4 @@ int key_gen_ecdsa(const char *secret_name, const char *public_name)
 
     return 1;
 }
+#endif

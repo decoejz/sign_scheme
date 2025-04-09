@@ -1,11 +1,31 @@
 cmake_minimum_required(VERSION 3.12)
 project(SignScheme VERSION 1.0.0 LANGUAGES C)
 
+# -------------------------------------
+# Platform Target Handling
+# -------------------------------------
+# Default to desktop
+if(NOT DEFINED TARGET_PLATFORM)
+    set(TARGET_PLATFORM "desktop")
+endif()
+
+message(STATUS "Building for target platform: ${TARGET_PLATFORM}")
+
+if(${TARGET_PLATFORM} STREQUAL "stm32")
+    add_definitions(-DCONFIG_EMBEDDED)
+endif()
+
+# -------------------------------------
+# Install Configuration
+# -------------------------------------
 # Set custom install directory
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "Install prefix" FORCE)
 endif()
 
+# -------------------------------------
+# OpenSSL Setup
+# -------------------------------------
 # Check if running on MacOS for OpenSSL path
 if(APPLE)
     set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
@@ -14,13 +34,20 @@ endif()
 
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
+message(STATUS "Using OpenSSL includes at: ${OPENSSL_INCLUDE_DIR}")
 
+# -------------------------------------
+# C Standard
+# -------------------------------------
 # Set C standard
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# -------------------------------------
+# Source Files
+# -------------------------------------
 # Define the library sources
-set(SIGN_SCHEME_SOURCES
+set(SIGN_SCHEME_SOURCES_BASE
     src/sign_scheme.c
 
     src/helper/int2uc.c
@@ -47,6 +74,19 @@ set(SIGN_SCHEME_SOURCES
     src/no_sign/verify.c
 )
 
+set(SIGN_SCHEME_SOURCES ${SIGN_SCHEME_SOURCES_BASE})
+
+# Include STM32-specific files only if targeting embedded
+if(${TARGET_PLATFORM} STREQUAL "stm32")
+    list(APPEND SIGN_SCHEME_SOURCES
+        src/helper/ff.c
+        src/helper/diskio.c
+    )
+endif()
+
+# -------------------------------------
+# Build Library
+# -------------------------------------
 # Create the library
 add_library(SignScheme ${SIGN_SCHEME_SOURCES})
 
@@ -68,7 +108,9 @@ target_include_directories(SignScheme
 # Link against OpenSSL
 target_link_libraries(SignScheme PRIVATE OpenSSL::Crypto)
 
-# Installation rules
+# -------------------------------------
+# Installation Rules
+# -------------------------------------
 include(GNUInstallDirs)
 set(INSTALL_CONFIGDIR lib/cmake/SignScheme)
 
@@ -89,11 +131,15 @@ install(DIRECTORY include/
 )
 
 # Module headers - create the subdirectories and install the headers
+install(FILES src/helper/helper.h DESTINATION include/helper)
+install(FILES src/helper/io.h DESTINATION include/helper)
+install(FILES src/helper/diskio.h DESTINATION include/helper)
+install(FILES src/helper/ffconf.h DESTINATION include/helper)
+install(FILES src/helper/ff.h DESTINATION include/helper)
 install(FILES src/rsa/rsa.h DESTINATION include/rsa)
 install(FILES src/eddsa/eddsa.h DESTINATION include/eddsa)
 install(FILES src/ecdsa/ecdsa.h DESTINATION include/ecdsa)
 install(FILES src/no_sign/no_sign.h DESTINATION include/no_sign)
-install(FILES src/helper/helper.h DESTINATION include/helper)
 
 # Export targets
 install(EXPORT SignSchemeTargets

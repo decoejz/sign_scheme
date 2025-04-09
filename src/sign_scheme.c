@@ -1,10 +1,21 @@
+#include "sign_scheme.h"
+
+#ifndef CONFIG_EMBEDDED
 #include <stdio.h>
-#include <stdlib.h>
+#endif
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
 
-#include "sign_scheme.h"
+#include "helper/io.h" 
+#ifdef CONFIG_EMBEDDED
+#include "helper/ff.h" 
+#endif
+
+#include "ecdsa/ecdsa.h"
+#include "eddsa/eddsa.h"
+#include "no_sign/no_sign.h"
+#include "rsa/rsa.h"
 
 typedef unsigned char uchar;
 
@@ -14,13 +25,17 @@ static char *log_path;
 static char *private_key_name;
 static char *public_key_name;
 
+#ifdef CONFIG_EMBEDDED
+static FIL *data_log;
+#else
 static FILE *data_log;
+#endif
 static char file_name[200];
 
 static int initialized = 0;
 
 static uchar app;
-static uchar scheme_number = NO_SIGN;
+static uchar scheme_number = SIGN_SCHEME_NONE;
 
 static pki_t (*read_key_p)(char, const char *) = read_key_no_sign;
 static int (*sign_p)(uint8_t *, uint8_t *, unsigned int, pki_t) = sign_no_sign;
@@ -95,19 +110,42 @@ void load_config() {
 
 static void close_all(void)
 {
-    fclose(data_log);
+    close_file(data_log);
 }
 
 static void cleanup_handler(int signum)
 {
-    fclose(data_log);
+    close_file(data_log);
     _exit(1);
 }
 
-static void write_log(int id, uchar encoded, time_t time, uchar len)
+#ifdef CONFIG_EMBEDDED
+static void write_log(int id, uchar encoded, time_t time, uchar len, uchar seq, uchar sysid, uchar compid, int msgid)
+{
+    register_info(data_log, "%d,%d,%ld,%d,%d,%d,%d,%d\n", id, encoded, time, len, seq, sysid, compid, msgid);
+}
+void sign_log(const char *msg)
+{
+    log_error(msg);
+}
+char *get(const char *attr)
+{
+    return getcfg(attr);
+}
+#else
+static void write_log(int id, uchar encoded, time_t time, uchar len, uchar seq, uchar sysid, uchar compid, int msgid)
 {
     fprintf(data_log, "%d,%d,%ld,%d\n", id, encoded, time, len);
 }
+void sign_log(const char *msg)
+{
+    //TODO
+}
+char *get(const char *attr)
+{
+    return getenv(attr);
+}
+#endif
 
 static uchar encode(uchar op, uchar step, uchar valid)
 {
@@ -129,12 +167,12 @@ static uchar encode(uchar op, uchar step, uchar valid)
 
 static void init_schemes()
 {
-    //sign_scheme = getenv("SIGN_SCHEME");
+    sign_scheme = get("SIGN_SCHEME");
     if (sign_scheme != NULL)
     {
         if (strcmp(sign_scheme, "RSA") == 0)
         {
-            scheme_number = RSA;
+            scheme_number = SIGN_SCHEME_RSA;
             read_key_p = read_key_rsa;
             sign_p = sign_rsa;
             verify_p = verify_rsa;
@@ -142,7 +180,7 @@ static void init_schemes()
         }
         else if (strcmp(sign_scheme, "ECDSA") == 0)
         {
-            scheme_number = ECDSA;
+            scheme_number = SIGN_SCHEME_ECDSA;
             read_key_p = read_key_ecdsa;
             sign_p = sign_ecdsa;
             verify_p = verify_ecdsa;
@@ -150,7 +188,7 @@ static void init_schemes()
         }
         else if (strcmp(sign_scheme, "EDDSA") == 0)
         {
-            scheme_number = EDDSA;
+            scheme_number = SIGN_SCHEME_EDDSA;
             read_key_p = read_key_eddsa;
             sign_p = sign_eddsa;
             verify_p = verify_eddsa;
@@ -161,19 +199,20 @@ static void init_schemes()
 
 static void init_keys()
 {
-    //private_key_name = getenv("SECRET_KEY_PATH");
-    //public_key_name = getenv("PUBLIC_KEY_PATH");
+    private_key_name = get("SECRET_KEY_PATH");
+    public_key_name = get("PUBLIC_KEY_PATH");
 
     if (!private_key_name || !public_key_name)
     {
-        fprintf(stderr, "Key path not defined\n");
+        sign_log("Key path not defined\n");
         exit(EXIT_FAILURE);
     }
 }
 
 static void init_app()
 {
-    //char *app_name = getenv("APP_NAME");
+    char *app_name = get("APP_NAME");
+    
     if (app_name != NULL)
     {
         if (strcmp(app_name, "GroundControl") == 0)
@@ -186,20 +225,21 @@ static void init_app()
         }
         else
         {
-            fprintf(stderr, "Invalid app name\n");
+            sign_log("Invalid app name\n");
             exit(EXIT_FAILURE);
         }
     }
     else
     {
-        fprintf(stderr, "Invalid app name\n");
+        sign_log("Invalid app name\n");
         exit(EXIT_FAILURE);
     }
 }
 
 static void init_logs()
 {
-    //const char *log_path = getenv("LOG_FILE_PATH");
+    const char *log_path = get("LOG_FILE_PATH");
+    
     if (!log_path)
     {
         printf("No path defined for log file.\n");
@@ -213,7 +253,12 @@ static void init_logs()
     time_t now = time(NULL);
     srand(now); // Add seed from now so it never repeats the ID between executions
     sprintf(file_name, "%s/data_log_%ld.csv", log_path, now);
-    data_log = fopen(file_name, "a+");
+    
+    #ifdef CONFIG_EMBEDDED
+    open_file(file_name);
+    #else
+    open_file(file_name);
+    #endif
 
     // For normal exits
     atexit(close_all);
@@ -257,9 +302,10 @@ int sign(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secr
 
     time_t after_exec = time(NULL);
 
-    write_log(id, encode(SIGN, BEFORE, NA), before_exec, msg_len);
-    write_log(id, encode(SIGN, AFTER, NA), after_exec, msg_len);
-    fflush(data_log);
+    write_log(id, encode(SIGN_PKT, BEFORE, NA), before_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    write_log(id, encode(SIGN_PKT, AFTER, NA), after_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    
+    flush_file(data_log);
 
     return res;
 }
@@ -267,7 +313,6 @@ int sign(uint8_t *msg_signed, uint8_t *msg_raw, unsigned int msg_len, pki_t secr
 int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_key)
 {
     int res;
-
     init_all();
 
     int id = rand();
@@ -277,10 +322,16 @@ int verify(uint8_t *msg_raw, uint8_t *msg_signed, int total_len, pki_t public_ke
 
     time_t after_exec = time(NULL);
 
-    write_log(id, encode(VERIFY, BEFORE, NA), before_exec, res);
-    write_log(id, encode(VERIFY, AFTER, res > 0), after_exec, res);
+    uchar m_len = msg_raw[1];
+    uchar m_seq = msg_raw[4];
+    uchar m_sysid = msg_raw[5];
+    uchar m_compid = msg_raw[6];
+    int msgid = msg2int(msg_raw[7], msg_raw[8], msg_raw[9]);
 
-    fflush(data_log);
+    write_log(id, encode(VERIFY_PKT, BEFORE, NA), before_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    write_log(id, encode(VERIFY_PKT, AFTER, res > 0), after_exec, m_len, m_seq, m_sysid, m_compid, msgid);
+    
+    flush_file(data_log);
 
     return res;
 }
